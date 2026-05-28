@@ -6,31 +6,82 @@
   </p>
 
   <h1 class="text-3xl font-semibold tracking-tight mt-6 mb-2">Roster</h1>
-  <p class="text-neutral-400 mb-8">Everyone with an assignment on this camp.</p>
+  <p class="text-neutral-400 mb-6">Everyone on this camp. Invite a writer below — they'll get an email with a single-use sign-in link.</p>
 
+  <% if flash[:notice] %>
+    <p class="mb-4 text-sm text-emerald-400" role="status"><%= flash[:notice] %></p>
+  <% end %>
+  <% if flash[:alert] %>
+    <p class="mb-4 text-sm text-rose-400" role="alert"><%= flash[:alert] %></p>
+  <% end %>
+
+  <%= form_with url: organizer_camp_writer_invites_path(@camp), method: :post,
+        local: true, class: "mb-10 rounded border border-neutral-800 bg-neutral-900/40 p-5 space-y-3" do %>
+    <h2 class="text-base font-semibold text-neutral-100">Invite a writer</h2>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <label class="block">
+        <span class="block text-xs uppercase tracking-wider text-neutral-500 mb-1">Name (optional)</span>
+        <input type="text" name="writer_invite[name]"
+               class="w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2 text-neutral-100"
+               placeholder="Alice Avery" />
+      </label>
+      <label class="block">
+        <span class="block text-xs uppercase tracking-wider text-neutral-500 mb-1">Email</span>
+        <input type="email" name="writer_invite[email]" required
+               class="w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2 text-neutral-100"
+               placeholder="writer@example.com" />
+      </label>
+    </div>
+
+    <button type="submit"
+            class="rounded bg-neutral-50 px-4 py-2 text-neutral-950 font-medium hover:bg-neutral-200 cursor-pointer">
+      Send invite
+    </button>
+  <% end %>
+
+  <% if @pending_invites.any? %>
+    <div class="mb-8">
+      <h2 class="text-sm uppercase tracking-wider text-neutral-500 mb-3">Pending invites</h2>
+      <ul class="divide-y divide-neutral-800 border border-neutral-800 rounded">
+        <% @pending_invites.each do |invite| %>
+          <li class="p-3 text-sm text-neutral-300 flex justify-between">
+            <span><%= invite.user.email %></span>
+            <span class="text-neutral-500">expires <%= invite.expires_at.strftime("%b %-d") %></span>
+          </li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <h2 class="text-sm uppercase tracking-wider text-neutral-500 mb-3">On the roster</h2>
   <% if @writers.empty? %>
     <p class="rounded border border-neutral-800 bg-neutral-900/50 p-6 text-neutral-400">
-      No writers on the roster yet. Add writers by editing a session.
+      No writers on the roster yet. Invite one above.
     </p>
   <% else %>
     <ul class="divide-y divide-neutral-800 border border-neutral-800 rounded">
       <% @writers.each do |writer| %>
         <li class="p-4">
           <p class="text-neutral-50">
-            <%= writer.writer_profile&.display_name.presence || writer.email %>
-            <% if writer.writer_profile&.display_name.present? %>
+            <%= writer.writer_profile&.display_name.presence || writer.name.presence || writer.email %>
+            <% if (writer.writer_profile&.display_name.present? || writer.name.present?) %>
               <span class="text-neutral-500 text-sm">&middot; <%= writer.email %></span>
             <% end %>
           </p>
           <% sessions_for_writer = @sessions_by_writer[writer.id] || [] %>
-          <p class="text-sm text-neutral-400 mt-1">
-            <%= pluralize(sessions_for_writer.size, "session") %>:
-            <%= safe_join(sessions_for_writer.map { |a|
-              link_to(a.camp_session.display_title,
-                      organizer_camp_session_path(@camp, a.camp_session),
-                      class: "text-neutral-300 hover:underline")
-            }, ", ") %>
-          </p>
+          <% if sessions_for_writer.any? %>
+            <p class="text-sm text-neutral-400 mt-1">
+              <%= pluralize(sessions_for_writer.size, "session") %>:
+              <%= safe_join(sessions_for_writer.map { |a|
+                link_to(a.camp_session.display_title,
+                        organizer_camp_session_path(@camp, a.camp_session),
+                        class: "text-neutral-300 hover:underline")
+              }, ", ") %>
+            </p>
+          <% else %>
+            <p class="text-sm text-neutral-500 mt-1">No sessions assigned yet.</p>
+          <% end %>
         </li>
       <% end %>
     </ul>

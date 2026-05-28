@@ -17,12 +17,21 @@ Rails.application.routes.draw do
   get    "sign_in/magic/:token"  => "magic_links#show",  as: :magic_link
   post   "sign_in/magic/:token"  => "magic_links#create", as: :consume_magic_link
 
-  get    "me"                    => "me#show",           as: :me
+  # Writer invites (email-driven, single-use, lands on the camp dashboard)
+  get  "invite/:token" => "writer_invites#show",   as: :writer_invite
+  post "invite/:token" => "writer_invites#create", as: :consume_writer_invite
+
+  get  "me" => "me#show", as: :me
+
+  resources :camps, only: :show do
+    get "schedule", to: "camp_schedules#show", as: :schedule, defaults: { format: :ics }
+  end
 
   namespace :organizer do
     resources :camps do
       resources :sessions, controller: "camp_sessions"
       resource :roster, only: :show
+      resources :writer_invites, only: :create
     end
   end
 

@@ -77,6 +77,7 @@ module Organizer
           u.role = "writer"
         end
         camp_session.session_assignments.find_or_create_by!(writer: writer)
+        @camp.memberships.find_or_create_by!(user: writer)
       end
     end
   end

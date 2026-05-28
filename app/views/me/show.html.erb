@@ -23,6 +23,23 @@
       <%= link_to "Manage your camps →", organizer_camps_path,
             class: "inline-block rounded bg-neutral-50 px-4 py-2 text-neutral-950 font-medium hover:bg-neutral-200" %>
     </div>
+  <% elsif @writer_camps&.any? %>
+    <div class="mt-8">
+      <h2 class="text-sm uppercase tracking-wider text-neutral-500 mb-3">Your camps</h2>
+      <ul class="space-y-2">
+        <% @writer_camps.each do |camp| %>
+          <li>
+            <%= link_to camp_path(camp),
+                  class: "block rounded border border-neutral-800 bg-neutral-900/50 p-3 hover:bg-neutral-900" do %>
+              <span class="text-neutral-50"><%= camp.name %></span>
+              <span class="block text-xs text-neutral-500">
+                <%= camp.start_date.strftime("%b %-d") %> – <%= camp.end_date.strftime("%b %-d, %Y") %>
+              </span>
+            <% end %>
+          </li>
+        <% end %>
+      </ul>
+    </div>
   <% end %>
 
   <%= button_to "Sign out", sign_out_path, method: :delete,
