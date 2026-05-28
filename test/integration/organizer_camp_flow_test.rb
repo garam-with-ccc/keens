@@ -90,6 +90,77 @@ class OrganizerCampFlowTest < ActionDispatch::IntegrationTest
     assert_redirected_to sign_in_path
   end
 
+  test "session form sends a writer-invite email for each new writer (no ghosts)" do
+    camp = @organizer.organized_camps.create!(
+      name: "Invite Camp",
+      start_date: Date.new(2026, 6, 1),
+      end_date: Date.new(2026, 6, 3)
+    )
+
+    ActionMailer::Base.deliveries.clear
+
+    # Brand-new writer added via the session form → user + invite + mail.
+    assert_difference -> { User.where(role: "writer").count }, 1 do
+      assert_difference -> { WriterInvite.count }, 1 do
+        assert_difference -> { ActionMailer::Base.deliveries.size }, 1 do
+          perform_enqueued_jobs do
+            post organizer_camp_sessions_path(camp), params: {
+              camp_session: {
+                title: "Writers' room",
+                starts_at: "2026-06-01T10:00",
+                ends_at:   "2026-06-01T13:00",
+                writer_emails: "ghost@example.com"
+              }
+            }
+          end
+        end
+      end
+    end
+
+    sess = CampSession.last
+    assert_redirected_to organizer_camp_session_path(camp, sess)
+    follow_redirect!
+    assert_select "p", text: /1 invite sent/
+
+    mail = ActionMailer::Base.deliveries.last
+    assert_equal [ "ghost@example.com" ], mail.to
+    assert_includes mail.subject, camp.name
+
+    # Re-adding the same writer (already has a live invite) → no duplicate mail.
+    ActionMailer::Base.deliveries.clear
+    assert_no_difference -> { WriterInvite.count } do
+      assert_no_difference -> { ActionMailer::Base.deliveries.size } do
+        perform_enqueued_jobs do
+          patch organizer_camp_session_path(camp, sess), params: {
+            camp_session: {
+              title: sess.title,
+              starts_at: sess.starts_at.iso8601,
+              ends_at:   sess.ends_at.iso8601,
+              writer_emails: "ghost@example.com"
+            }
+          }
+        end
+      end
+    end
+
+    # Adding a *different* writer → one fresh invite + mail.
+    assert_difference -> { WriterInvite.count }, 1 do
+      assert_difference -> { ActionMailer::Base.deliveries.size }, 1 do
+        perform_enqueued_jobs do
+          patch organizer_camp_session_path(camp, sess), params: {
+            camp_session: {
+              title: sess.title,
+              starts_at: sess.starts_at.iso8601,
+              ends_at:   sess.ends_at.iso8601,
+              writer_emails: "second@example.com"
+            }
+          }
+        end
+      end
+    end
+    assert_equal [ "second@example.com" ], ActionMailer::Base.deliveries.last.to
+  end
+
   test "session form rejects ends_at <= starts_at" do
     camp = @organizer.organized_camps.create!(
       name: "Validation camp",

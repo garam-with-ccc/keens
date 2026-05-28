@@ -12,13 +12,15 @@ module Organizer
     def create
       @camp_session = @camp.camp_sessions.build(camp_session_params)
       @writer_emails = params.dig(:camp_session, :writer_emails).to_s
+      invited_count = 0
 
       ActiveRecord::Base.transaction do
         @camp_session.save!
-        assign_writers!(@camp_session, @writer_emails)
+        invited_count = assign_writers!(@camp_session, @writer_emails)
       end
 
-      redirect_to organizer_camp_session_path(@camp, @camp_session), notice: "Session created."
+      redirect_to organizer_camp_session_path(@camp, @camp_session),
+        notice: session_saved_notice("Session created.", invited_count)
     rescue ActiveRecord::RecordInvalid
       render :new, status: :unprocessable_entity
     end
@@ -33,13 +35,15 @@ module Organizer
 
     def update
       @writer_emails = params.dig(:camp_session, :writer_emails).to_s
+      invited_count = 0
 
       ActiveRecord::Base.transaction do
         @camp_session.update!(camp_session_params)
-        assign_writers!(@camp_session, @writer_emails) if @writer_emails.present?
+        invited_count = assign_writers!(@camp_session, @writer_emails) if @writer_emails.present?
       end
 
-      redirect_to organizer_camp_session_path(@camp, @camp_session), notice: "Session updated."
+      redirect_to organizer_camp_session_path(@camp, @camp_session),
+        notice: session_saved_notice("Session updated.", invited_count)
     rescue ActiveRecord::RecordInvalid
       render :edit, status: :unprocessable_entity
     end
@@ -70,15 +74,26 @@ module Organizer
 
     def assign_writers!(camp_session, emails_blob)
       emails = emails_blob.to_s.split(/[\s,]+/).map { |e| e.strip.downcase }.reject(&:blank?).uniq
+      invited = 0
       emails.each do |email|
-        next unless email.match?(URI::MailTo::EMAIL_REGEXP)
+        result = WriterInviter.invite!(
+          camp: @camp,
+          email: email,
+          invited_by: current_user,
+          skip_if_live: true
+        )
+        next if result.invalid?
 
-        writer = User.find_or_create_by!(email: email) do |u|
-          u.role = "writer"
-        end
-        camp_session.session_assignments.find_or_create_by!(writer: writer)
-        @camp.memberships.find_or_create_by!(user: writer)
+        camp_session.session_assignments.find_or_create_by!(writer: result.writer)
+        invited += 1 if result.invited?
       end
+      invited
+    end
+
+    def session_saved_notice(base_message, invited_count)
+      return base_message if invited_count.zero?
+
+      "#{base_message} #{invited_count} #{'invite'.pluralize(invited_count)} sent."
     end
   end
 end
