@@ -1,0 +1,23 @@
+<% content_for :title, "Your account" %>
+
+<section class="w-full max-w-md mx-auto">
+  <h1 class="text-3xl font-semibold tracking-tight mb-6">You're signed in</h1>
+
+  <% if flash[:notice] %>
+    <p class="mb-4 text-sm text-emerald-400"><%= flash[:notice] %></p>
+  <% end %>
+
+  <dl class="space-y-3 text-neutral-300">
+    <div>
+      <dt class="text-xs uppercase tracking-wider text-neutral-500">Email</dt>
+      <dd class="text-neutral-50"><%= @user.email %></dd>
+    </div>
+    <div>
+      <dt class="text-xs uppercase tracking-wider text-neutral-500">Role</dt>
+      <dd class="text-neutral-50"><%= @user.role %></dd>
+    </div>
+  </dl>
+
+  <%= button_to "Sign out", sign_out_path, method: :delete,
+        class: "mt-10 rounded border border-neutral-700 px-4 py-2 text-neutral-100 hover:bg-neutral-800 cursor-pointer" %>
+</section>

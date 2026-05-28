@@ -9,6 +9,16 @@ Rails.application.routes.draw do
   # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
   # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
 
+  # Auth
+  get    "sign_in"               => "sessions#new",      as: :sign_in
+  post   "sign_in"               => "sessions#create"
+  get    "sign_in/sent"          => "sessions#sent",     as: :sign_in_sent
+  delete "sign_out"              => "sessions#destroy",  as: :sign_out
+  get    "sign_in/magic/:token"  => "magic_links#show",  as: :magic_link
+  post   "sign_in/magic/:token"  => "magic_links#create", as: :consume_magic_link
+
+  get    "me"                    => "me#show",           as: :me
+
   # Defines the root path route ("/")
   root "landing#show"
 end

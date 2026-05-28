@@ -1,0 +1,11 @@
+Sign in to Keens
+================
+
+Hi<%= " #{@user.name}" if @user.name.present? %>,
+
+Use the link below to sign in. It is good for one use and expires at
+<%= @expires_at.strftime("%H:%M %Z on %b %-d, %Y") %>.
+
+<%= @sign_in_url %>
+
+If you did not request this email, you can safely ignore it.

@@ -1,0 +1,25 @@
+<% content_for :title, "Sign in to Keens" %>
+
+<section class="w-full max-w-md mx-auto">
+  <h1 class="text-3xl font-semibold tracking-tight mb-2">Sign in</h1>
+  <p class="text-neutral-400 mb-8">We'll email you a one-time link.</p>
+
+  <% if flash[:alert] %>
+    <p class="mb-4 text-sm text-red-400" role="alert"><%= flash[:alert] %></p>
+  <% end %>
+
+  <%= form_with url: sign_in_path, method: :post, local: true, class: "space-y-4" do |f| %>
+    <div>
+      <%= f.label :email, "Email address", class: "block text-sm mb-1" %>
+      <%= f.email_field :email,
+            required: true,
+            autofocus: true,
+            autocomplete: "email",
+            placeholder: "you@example.com",
+            class: "w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-neutral-50" %>
+    </div>
+
+    <%= f.submit "Send sign-in link",
+          class: "rounded bg-neutral-50 px-4 py-2 text-neutral-950 font-medium hover:bg-neutral-200 cursor-pointer" %>
+  <% end %>
+</section>

@@ -1,0 +1,12 @@
+<% content_for :title, "Check your email" %>
+
+<section class="w-full max-w-md mx-auto text-center">
+  <h1 class="text-3xl font-semibold tracking-tight mb-4">Check your email</h1>
+  <p class="text-neutral-300 mb-2">
+    We sent a sign-in link to
+    <strong class="text-neutral-50"><%= @email %></strong>.
+  </p>
+  <p class="text-neutral-400 text-sm">
+    The link is single-use and expires in 20 minutes.
+  </p>
+</section>
