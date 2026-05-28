@@ -1,0 +1,13 @@
+You're invited to organize on Keens
+====================================
+
+Hi<%= " #{@user.name}" if @user.name.present? %>,
+
+<%= @invited_by.display_name %> invited you to run songwriting camps on Keens as an organizer.
+
+Use the link below to accept and sign in. It is good for one use and expires on
+<%= @expires_at.strftime("%b %-d, %Y") %>.
+
+<%= @accept_url %>
+
+If you weren't expecting this, you can ignore the email.

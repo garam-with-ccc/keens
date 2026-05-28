@@ -19,9 +19,11 @@
   </dl>
 
   <% if @user.organizer? %>
-    <div class="mt-8">
+    <div class="mt-8 flex flex-wrap gap-3">
       <%= link_to "Manage your camps →", organizer_camps_path,
             class: "inline-block rounded bg-neutral-50 px-4 py-2 text-neutral-950 font-medium hover:bg-neutral-200" %>
+      <%= link_to "Invite an organizer", organizer_invites_path,
+            class: "inline-block rounded border border-neutral-700 px-4 py-2 text-neutral-100 hover:bg-neutral-800" %>
     </div>
   <% elsif @writer_camps&.any? %>
     <div class="mt-8">

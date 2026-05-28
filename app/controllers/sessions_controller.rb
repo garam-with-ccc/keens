@@ -14,7 +14,7 @@ class SessionsController < ApplicationController
     end
 
     user = User.find_or_create_by!(email: email) do |u|
-      u.role = "writer"
+      u.role = bootstrap_role_for(email)
     end
 
     magic_link, token = MagicLink.issue!(
@@ -35,5 +35,17 @@ class SessionsController < ApplicationController
   def destroy
     sign_out
     redirect_to root_path, notice: "Signed out."
+  end
+
+  private
+
+  # Bootstrap allow-list: emails listed in KEENS_BOOTSTRAP_ORGANIZER_EMAILS get
+  # the organizer role on first sign-up. This is the only path that mints an
+  # organizer without an existing organizer in the system (the invite flow
+  # handles every subsequent organizer).
+  def bootstrap_role_for(email)
+    allow_list = ENV["KEENS_BOOTSTRAP_ORGANIZER_EMAILS"].to_s
+                   .split(",").map { |e| e.strip.downcase }.reject(&:blank?)
+    allow_list.include?(email) ? "organizer" : "writer"
   end
 end

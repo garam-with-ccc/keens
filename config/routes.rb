@@ -21,6 +21,10 @@ Rails.application.routes.draw do
   get  "invite/:token" => "writer_invites#show",   as: :writer_invite
   post "invite/:token" => "writer_invites#create", as: :consume_writer_invite
 
+  # Organizer invites (email-driven, single-use, promotes the recipient to organizer)
+  get  "organizer-invite/:token" => "organizer_invites#show",   as: :organizer_invite
+  post "organizer-invite/:token" => "organizer_invites#create", as: :consume_organizer_invite
+
   get  "me" => "me#show", as: :me
 
   resources :camps, only: :show do
@@ -28,6 +32,7 @@ Rails.application.routes.draw do
   end
 
   namespace :organizer do
+    resources :invites, only: %i[index create]
     resources :camps do
       resources :sessions, controller: "camp_sessions"
       resource :roster, only: :show

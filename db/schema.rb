@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_28_100010) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_28_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -61,6 +61,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_28_100010) do
     t.index ["expires_at"], name: "index_magic_links_on_expires_at"
     t.index ["token_digest"], name: "index_magic_links_on_token_digest", unique: true
     t.index ["user_id"], name: "index_magic_links_on_user_id"
+  end
+
+  create_table "organizer_invites", force: :cascade do |t|
+    t.datetime "accepted_at"
+    t.datetime "created_at", null: false
+    t.datetime "expires_at", null: false
+    t.bigint "invited_by_id", null: false
+    t.string "token_digest", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["expires_at"], name: "index_organizer_invites_on_expires_at"
+    t.index ["invited_by_id"], name: "index_organizer_invites_on_invited_by_id"
+    t.index ["token_digest"], name: "index_organizer_invites_on_token_digest", unique: true
+    t.index ["user_id"], name: "index_organizer_invites_on_user_id"
   end
 
   create_table "session_assignments", force: :cascade do |t|
@@ -124,6 +138,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_28_100010) do
   add_foreign_key "camp_sessions", "camps"
   add_foreign_key "camps", "users", column: "organizer_id"
   add_foreign_key "magic_links", "users"
+  add_foreign_key "organizer_invites", "users"
+  add_foreign_key "organizer_invites", "users", column: "invited_by_id"
   add_foreign_key "session_assignments", "camp_sessions"
   add_foreign_key "session_assignments", "users", column: "writer_id"
   add_foreign_key "sessions", "users"
