@@ -19,6 +19,13 @@ Rails.application.routes.draw do
 
   get    "me"                    => "me#show",           as: :me
 
+  namespace :organizer do
+    resources :camps do
+      resources :sessions, controller: "camp_sessions"
+      resource :roster, only: :show
+    end
+  end
+
   # Defines the root path route ("/")
   root "landing#show"
 end

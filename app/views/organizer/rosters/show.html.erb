@@ -1,0 +1,38 @@
+<% content_for :title, "#{@camp.name} — Roster" %>
+
+<section class="w-full max-w-3xl mx-auto">
+  <p class="text-sm">
+    <%= link_to "← #{@camp.name}", organizer_camp_path(@camp), class: "text-neutral-400 hover:text-neutral-200" %>
+  </p>
+
+  <h1 class="text-3xl font-semibold tracking-tight mt-6 mb-2">Roster</h1>
+  <p class="text-neutral-400 mb-8">Everyone with an assignment on this camp.</p>
+
+  <% if @writers.empty? %>
+    <p class="rounded border border-neutral-800 bg-neutral-900/50 p-6 text-neutral-400">
+      No writers on the roster yet. Add writers by editing a session.
+    </p>
+  <% else %>
+    <ul class="divide-y divide-neutral-800 border border-neutral-800 rounded">
+      <% @writers.each do |writer| %>
+        <li class="p-4">
+          <p class="text-neutral-50">
+            <%= writer.writer_profile&.display_name.presence || writer.email %>
+            <% if writer.writer_profile&.display_name.present? %>
+              <span class="text-neutral-500 text-sm">&middot; <%= writer.email %></span>
+            <% end %>
+          </p>
+          <% sessions_for_writer = @sessions_by_writer[writer.id] || [] %>
+          <p class="text-sm text-neutral-400 mt-1">
+            <%= pluralize(sessions_for_writer.size, "session") %>:
+            <%= safe_join(sessions_for_writer.map { |a|
+              link_to(a.camp_session.display_title,
+                      organizer_camp_session_path(@camp, a.camp_session),
+                      class: "text-neutral-300 hover:underline")
+            }, ", ") %>
+          </p>
+        </li>
+      <% end %>
+    </ul>
+  <% end %>
+</section>

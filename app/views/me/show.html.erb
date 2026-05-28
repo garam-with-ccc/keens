@@ -18,6 +18,13 @@
     </div>
   </dl>
 
+  <% if @user.organizer? %>
+    <div class="mt-8">
+      <%= link_to "Manage your camps →", organizer_camps_path,
+            class: "inline-block rounded bg-neutral-50 px-4 py-2 text-neutral-950 font-medium hover:bg-neutral-200" %>
+    </div>
+  <% end %>
+
   <%= button_to "Sign out", sign_out_path, method: :delete,
         class: "mt-10 rounded border border-neutral-700 px-4 py-2 text-neutral-100 hover:bg-neutral-800 cursor-pointer" %>
 </section>

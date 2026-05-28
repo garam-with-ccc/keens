@@ -1,0 +1,9 @@
+<% content_for :title, "New session" %>
+
+<section class="w-full max-w-2xl mx-auto">
+  <p class="text-sm">
+    <%= link_to "← #{@camp.name}", organizer_camp_path(@camp), class: "text-neutral-400 hover:text-neutral-200" %>
+  </p>
+  <h1 class="text-3xl font-semibold tracking-tight my-6">New session</h1>
+  <%= render "form", camp: @camp, camp_session: @camp_session, writer_emails: @writer_emails %>
+</section>

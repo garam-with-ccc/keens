@@ -1,0 +1,63 @@
+<%
+  form_url = camp_session.persisted? ?
+    organizer_camp_session_path(camp, camp_session) :
+    organizer_camp_sessions_path(camp)
+  form_method = camp_session.persisted? ? :patch : :post
+%>
+<%= form_with model: camp_session, url: form_url, method: form_method, scope: :camp_session, local: true, class: "space-y-5" do |f| %>
+  <% if camp_session.errors.any? %>
+    <div class="rounded border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-300">
+      <p class="font-medium mb-1">Couldn't save this session:</p>
+      <ul class="list-disc list-inside">
+        <% camp_session.errors.full_messages.each do |msg| %>
+          <li><%= msg %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div>
+    <%= f.label :title, "Title (optional)", class: "block text-sm mb-1" %>
+    <%= f.text_field :title,
+          class: "w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-neutral-50",
+          placeholder: "e.g. Day 1 / Room A" %>
+  </div>
+
+  <div class="grid grid-cols-2 gap-4">
+    <div>
+      <%= f.label :starts_at, "Starts at", class: "block text-sm mb-1" %>
+      <%= f.datetime_local_field :starts_at, required: true,
+            class: "w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-neutral-50" %>
+    </div>
+    <div>
+      <%= f.label :ends_at, "Ends at", class: "block text-sm mb-1" %>
+      <%= f.datetime_local_field :ends_at, required: true,
+            class: "w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-neutral-50" %>
+    </div>
+  </div>
+
+  <div>
+    <%= f.label :room, "Room / location", class: "block text-sm mb-1" %>
+    <%= f.text_field :room,
+          class: "w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-neutral-50",
+          placeholder: "e.g. Studio A" %>
+  </div>
+
+  <div>
+    <%= f.label :writer_emails, "Assign writers (one email per line)", class: "block text-sm mb-1" %>
+    <%= f.text_area :writer_emails, rows: 4, value: writer_emails,
+          class: "w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-neutral-50 font-mono text-sm",
+          placeholder: "alice@example.com&#10;bob@example.com" %>
+    <p class="text-xs text-neutral-500 mt-1">
+      We'll create writer accounts on the fly. They'll see this session once you invite them.
+    </p>
+  </div>
+
+  <div class="flex items-center gap-3 pt-2">
+    <%= f.submit (camp_session.persisted? ? "Save changes" : "Create session"),
+          class: "rounded bg-neutral-50 px-4 py-2 text-neutral-950 font-medium hover:bg-neutral-200 cursor-pointer" %>
+    <%= link_to "Cancel",
+          (camp_session.persisted? ? organizer_camp_session_path(camp, camp_session) : organizer_camp_path(camp)),
+          class: "text-sm text-neutral-400 hover:text-neutral-200" %>
+  </div>
+<% end %>
