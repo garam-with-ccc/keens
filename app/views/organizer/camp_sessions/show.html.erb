@@ -1,0 +1,46 @@
+<% content_for :title, @camp_session.display_title %>
+
+<section class="w-full max-w-3xl mx-auto">
+  <p class="text-sm">
+    <%= link_to "← #{@camp.name}", organizer_camp_path(@camp), class: "text-neutral-400 hover:text-neutral-200" %>
+  </p>
+
+  <% if flash[:notice] %>
+    <p class="mt-4 text-sm text-emerald-400"><%= flash[:notice] %></p>
+  <% end %>
+
+  <header class="mt-6 mb-8 flex items-baseline justify-between">
+    <div>
+      <h1 class="text-3xl font-semibold tracking-tight"><%= @camp_session.display_title %></h1>
+      <p class="text-neutral-400 mt-1">
+        <%= l(@camp_session.starts_at, format: :long) %> → <%= l(@camp_session.ends_at, format: :long) %>
+        <% if @camp_session.room.present? %>&middot; <%= @camp_session.room %><% end %>
+      </p>
+    </div>
+    <div class="flex items-center gap-2">
+      <%= link_to "Edit", edit_organizer_camp_session_path(@camp, @camp_session),
+            class: "rounded border border-neutral-700 px-3 py-1.5 text-sm text-neutral-200 hover:bg-neutral-800" %>
+      <%= button_to "Delete", organizer_camp_session_path(@camp, @camp_session), method: :delete,
+            form: { data: { turbo_confirm: "Delete this session?" } },
+            class: "rounded border border-red-500/40 px-3 py-1.5 text-sm text-red-300 hover:bg-red-500/10 cursor-pointer" %>
+    </div>
+  </header>
+
+  <h2 class="text-xl font-semibold mb-4">Writers on this session</h2>
+  <% if @assignments.empty? %>
+    <p class="rounded border border-neutral-800 bg-neutral-900/50 p-6 text-neutral-400 mb-8">
+      No writers assigned yet. <%= link_to "Edit to add writers →", edit_organizer_camp_session_path(@camp, @camp_session), class: "underline text-neutral-100" %>
+    </p>
+  <% else %>
+    <ul class="divide-y divide-neutral-800 border border-neutral-800 rounded mb-8">
+      <% @assignments.each do |a| %>
+        <li class="p-3 text-neutral-200">
+          <%= a.writer.email %>
+          <% if a.writer.writer_profile&.display_name.present? %>
+            <span class="text-neutral-500">&middot; <%= a.writer.writer_profile.display_name %></span>
+          <% end %>
+        </li>
+      <% end %>
+    </ul>
+  <% end %>
+</section>

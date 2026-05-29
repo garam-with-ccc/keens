@@ -32,6 +32,11 @@ services:
         value: true
       - key: RAILS_SERVE_STATIC_FILES
         value: true
+      # Bootstrap allow-list for the first organizer(s) — comma-separated emails.
+      # Set in Render dashboard, not synced from repo. Every other organizer is
+      # added via the in-app invite flow.
+      - key: KEENS_BOOTSTRAP_ORGANIZER_EMAILS
+        sync: false
       # Mail delivery (set in Render dashboard, not synced from repo)
       - key: APP_HOST
         sync: false

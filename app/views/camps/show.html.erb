@@ -1,0 +1,67 @@
+<% content_for :title, "#{@camp.name} — Your schedule" %>
+
+<section class="w-full max-w-3xl mx-auto">
+  <p class="text-xs uppercase tracking-wider text-neutral-500">Your camp</p>
+  <h1 class="text-3xl font-semibold tracking-tight mt-1 mb-1"><%= @camp.name %></h1>
+  <p class="text-neutral-400 mb-8">
+    <%= @camp.start_date.strftime("%b %-d") %> – <%= @camp.end_date.strftime("%b %-d, %Y") %>
+    <% if @camp.target_artist.present? %>
+      &middot; <%= @camp.target_artist %>
+    <% end %>
+  </p>
+
+  <% if flash[:notice] %>
+    <p class="mb-6 text-sm text-emerald-400" role="status"><%= flash[:notice] %></p>
+  <% end %>
+
+  <div class="flex items-center gap-3 mb-6">
+    <h2 class="text-xl font-semibold">Your sessions</h2>
+    <span class="text-sm text-neutral-500"><%= pluralize(@sessions.size, "session") %></span>
+  </div>
+
+  <% if @sessions.empty? %>
+    <p class="rounded border border-neutral-800 bg-neutral-900/50 p-6 text-neutral-400">
+      You're on the roster. The organizer hasn't assigned you to any sessions yet — check back soon.
+    </p>
+  <% else %>
+    <ol class="space-y-3" data-testid="writer-schedule">
+      <% @sessions.each do |session| %>
+        <% co_writers = session.session_assignments.reject { |a| a.writer_id == current_user.id }.map(&:writer) %>
+        <li class="rounded border border-neutral-800 bg-neutral-900/40 p-5">
+          <p class="text-xs uppercase tracking-wider text-neutral-500">
+            <%= session.starts_at.strftime("%a, %b %-d") %>
+          </p>
+          <p class="text-lg font-medium text-neutral-50 mt-1">
+            <%= session.display_title %>
+          </p>
+          <p class="text-sm text-neutral-300 mt-1">
+            <%= session.starts_at.strftime("%-I:%M %p") %> – <%= session.ends_at.strftime("%-I:%M %p") %>
+            <% if session.room.present? %>
+              &middot; <span class="text-neutral-200"><%= session.room %></span>
+            <% end %>
+          </p>
+          <% if co_writers.any? %>
+            <p class="text-sm text-neutral-400 mt-2">
+              With
+              <%= safe_join(co_writers.map { |w| content_tag(:span, w.display_name, class: "text-neutral-200") }, ", ") %>
+            </p>
+          <% end %>
+        </li>
+      <% end %>
+    </ol>
+  <% end %>
+
+  <div class="mt-10 rounded border border-neutral-800 bg-neutral-900/40 p-5">
+    <h2 class="text-base font-semibold text-neutral-100">Subscribe in your calendar</h2>
+    <p class="text-sm text-neutral-400 mt-1 mb-3">
+      Add this URL to Google or Apple Calendar to keep your schedule in sync.
+    </p>
+    <code class="block break-all rounded bg-neutral-950/60 border border-neutral-800 p-3 text-xs text-neutral-300">
+      <%= camp_schedule_url(@camp, token: @feed_token, format: :ics) %>
+    </code>
+    <p class="mt-3">
+      <%= link_to "Download .ics", camp_schedule_path(@camp, token: @feed_token, format: :ics),
+            class: "text-sm text-neutral-300 hover:text-neutral-50 underline" %>
+    </p>
+  </div>
+</section>

@@ -1,0 +1,10 @@
+<% content_for :title, "Invite expired" %>
+
+<section class="w-full max-w-md mx-auto text-center">
+  <h1 class="text-3xl font-semibold tracking-tight mb-3">Invite expired or already used</h1>
+  <p class="text-neutral-400 mb-6">
+    Ask your camp organizer to send you a fresh invite link.
+  </p>
+  <%= link_to "Go to sign in", sign_in_path,
+        class: "inline-block rounded border border-neutral-700 px-4 py-2 text-neutral-100 hover:bg-neutral-800" %>
+</section>
