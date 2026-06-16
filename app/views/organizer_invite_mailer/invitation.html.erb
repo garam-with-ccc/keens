@@ -1,0 +1,12 @@
+<h1>You're invited to organize on Keens</h1>
+
+<p>Hi<%= " #{@user.name}" if @user.name.present? %>,</p>
+
+<p><%= @invited_by.display_name %> invited you to run songwriting camps on Keens as an organizer.</p>
+
+<p>Use the link below to accept and sign in. It is good for one use and expires on
+<%= @expires_at.strftime("%b %-d, %Y") %>.</p>
+
+<p><%= link_to "Accept invite and sign in", @accept_url %></p>
+
+<p>If you weren't expecting this, you can ignore the email.</p>

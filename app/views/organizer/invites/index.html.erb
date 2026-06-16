@@ -1,0 +1,68 @@
+<% content_for :title, "Organizer invites" %>
+
+<section class="w-full max-w-3xl mx-auto">
+  <div class="flex items-baseline justify-between mb-6">
+    <h1 class="text-3xl font-semibold tracking-tight">Organizer invites</h1>
+    <%= link_to "← Your camps", organizer_camps_path,
+          class: "text-sm text-neutral-400 hover:text-neutral-200" %>
+  </div>
+
+  <p class="text-neutral-400 mb-6">
+    Invite a trusted partner to run camps on Keens. They'll get an email with a single-use
+    link that grants organizer access.
+  </p>
+
+  <% if flash[:notice] %>
+    <p class="mb-4 text-sm text-emerald-400"><%= flash[:notice] %></p>
+  <% end %>
+  <% if flash[:alert] %>
+    <p class="mb-4 text-sm text-red-400" role="alert"><%= flash[:alert] %></p>
+  <% end %>
+
+  <%= form_with url: organizer_invites_path, method: :post, scope: :organizer_invite,
+        local: true, class: "rounded border border-neutral-800 bg-neutral-900/50 p-4 mb-10 space-y-3" do |f| %>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div>
+        <%= f.label :email, "Organizer email", class: "block text-xs uppercase tracking-wider text-neutral-500 mb-1" %>
+        <%= f.email_field :email, required: true, autocomplete: "off",
+              placeholder: "newceo@example.com",
+              class: "w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2 text-neutral-50" %>
+      </div>
+      <div>
+        <%= f.label :name, "Name (optional)", class: "block text-xs uppercase tracking-wider text-neutral-500 mb-1" %>
+        <%= f.text_field :name, autocomplete: "off",
+              class: "w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2 text-neutral-50" %>
+      </div>
+    </div>
+    <%= f.submit "Send organizer invite",
+          class: "rounded bg-neutral-50 px-4 py-2 text-neutral-950 font-medium hover:bg-neutral-200 cursor-pointer" %>
+  <% end %>
+
+  <h2 class="text-sm uppercase tracking-wider text-neutral-500 mb-3">Recent invites</h2>
+  <% if @invites.empty? %>
+    <p class="text-neutral-500 text-sm">No invites sent yet.</p>
+  <% else %>
+    <ul class="divide-y divide-neutral-800 border border-neutral-800 rounded">
+      <% @invites.each do |invite| %>
+        <li class="p-3 flex items-baseline justify-between">
+          <div>
+            <span class="text-neutral-50"><%= invite.user.email %></span>
+            <span class="block text-xs text-neutral-500 mt-0.5">
+              invited by <%= invite.invited_by.display_name %>
+              &middot; <%= invite.created_at.strftime("%b %-d, %Y") %>
+            </span>
+          </div>
+          <span class="text-xs">
+            <% if invite.accepted? %>
+              <span class="text-emerald-400">Accepted</span>
+            <% elsif invite.expired? %>
+              <span class="text-neutral-500">Expired</span>
+            <% else %>
+              <span class="text-amber-400">Pending</span>
+            <% end %>
+          </span>
+        </li>
+      <% end %>
+    </ul>
+  <% end %>
+</section>

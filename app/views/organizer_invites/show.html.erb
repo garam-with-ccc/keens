@@ -1,0 +1,19 @@
+<% content_for :title, "Accept organizer invite" %>
+
+<section class="w-full max-w-md mx-auto">
+  <h1 class="text-3xl font-semibold tracking-tight mb-2">You've been invited to organize on Keens</h1>
+  <p class="text-neutral-400 mb-6">
+    <%= @invite.invited_by.display_name %> invited you to run songwriting camps as an organizer.
+  </p>
+
+  <%= form_with url: organizer_invite_path(token: @token), method: :post do |f| %>
+    <button type="submit"
+            class="w-full rounded bg-neutral-50 px-4 py-3 text-neutral-950 font-medium hover:bg-neutral-200 cursor-pointer">
+      Accept and sign in as <%= @invite.user.email %>
+    </button>
+  <% end %>
+
+  <p class="mt-6 text-xs text-neutral-500">
+    Single-use link. Expires <%= @invite.expires_at.strftime("%b %-d, %Y") %>.
+  </p>
+</section>

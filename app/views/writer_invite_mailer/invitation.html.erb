@@ -1,0 +1,14 @@
+<h1>You're invited to <%= @camp.name %></h1>
+
+<p>Hi<%= " #{@user.name}" if @user.name.present? %>,</p>
+
+<p><%= @invited_by.display_name %> invited you to <strong><%= @camp.name %></strong>
+(<%= @camp.start_date.strftime("%b %-d") %> – <%= @camp.end_date.strftime("%b %-d, %Y") %>)
+on Keens.</p>
+
+<p>Use the link below to sign in and see your schedule. It is good for one use and expires on
+<%= @expires_at.strftime("%b %-d, %Y") %>.</p>
+
+<p><%= link_to "Accept invite and sign in", @accept_url %></p>
+
+<p>If you weren't expecting this, you can ignore the email.</p>

@@ -1,0 +1,40 @@
+<% content_for :title, "Your camps" %>
+
+<section class="w-full max-w-4xl mx-auto">
+  <div class="flex items-baseline justify-between mb-8">
+    <h1 class="text-3xl font-semibold tracking-tight">Your camps</h1>
+    <%= link_to "New camp", new_organizer_camp_path,
+          class: "rounded bg-neutral-50 px-4 py-2 text-neutral-950 font-medium hover:bg-neutral-200" %>
+  </div>
+
+  <% if flash[:notice] %>
+    <p class="mb-4 text-sm text-emerald-400"><%= flash[:notice] %></p>
+  <% end %>
+
+  <% if @camps.empty? %>
+    <div class="rounded border border-neutral-800 bg-neutral-900/50 p-8 text-neutral-400">
+      No camps yet. <%= link_to "Create the first one →", new_organizer_camp_path, class: "text-neutral-100 underline" %>
+    </div>
+  <% else %>
+    <ul class="divide-y divide-neutral-800 border border-neutral-800 rounded">
+      <% @camps.each do |camp| %>
+        <li class="p-4 flex items-baseline justify-between">
+          <div>
+            <%= link_to camp.name, organizer_camp_path(camp), class: "text-lg text-neutral-50 hover:underline" %>
+            <p class="text-sm text-neutral-400 mt-1">
+              <%= camp.start_date.strftime("%b %-d") %> – <%= camp.end_date.strftime("%b %-d, %Y") %>
+              <% if camp.target_artist.present? %>
+                &middot; for <%= camp.target_artist %>
+              <% end %>
+            </p>
+          </div>
+          <span class="text-xs text-neutral-500"><%= pluralize(camp.camp_sessions.count, "session") %></span>
+        </li>
+      <% end %>
+    </ul>
+  <% end %>
+
+  <p class="mt-12 text-sm">
+    <%= link_to "← Your account", me_path, class: "text-neutral-400 hover:text-neutral-200" %>
+  </p>
+</section>

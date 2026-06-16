@@ -1,0 +1,52 @@
+<%= form_with model: [:organizer, camp], local: true, class: "space-y-5" do |f| %>
+  <% if camp.errors.any? %>
+    <div class="rounded border border-red-500/40 bg-red-500/10 p-4 text-sm text-red-300">
+      <p class="font-medium mb-1">Couldn't save this camp:</p>
+      <ul class="list-disc list-inside">
+        <% camp.errors.full_messages.each do |msg| %>
+          <li><%= msg %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div>
+    <%= f.label :name, "Camp name", class: "block text-sm mb-1" %>
+    <%= f.text_field :name, required: true, autofocus: true,
+          class: "w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-neutral-50" %>
+  </div>
+
+  <div class="grid grid-cols-2 gap-4">
+    <div>
+      <%= f.label :start_date, "Start date", class: "block text-sm mb-1" %>
+      <%= f.date_field :start_date, required: true,
+            class: "w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-neutral-50" %>
+    </div>
+    <div>
+      <%= f.label :end_date, "End date", class: "block text-sm mb-1" %>
+      <%= f.date_field :end_date, required: true,
+            class: "w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-neutral-50" %>
+    </div>
+  </div>
+
+  <div>
+    <%= f.label :target_artist, "Target artist (optional)", class: "block text-sm mb-1" %>
+    <%= f.text_field :target_artist,
+          class: "w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-neutral-50",
+          placeholder: "e.g. Sabrina Carpenter" %>
+  </div>
+
+  <div>
+    <%= f.label :brief, "Brief (markdown)", class: "block text-sm mb-1" %>
+    <%= f.text_area :brief, rows: 6,
+          class: "w-full rounded border border-neutral-700 bg-neutral-900 px-3 py-2 text-neutral-50 font-mono text-sm",
+          placeholder: "What's the camp going for? Themes, references, vibes." %>
+  </div>
+
+  <div class="flex items-center gap-3 pt-2">
+    <%= f.submit (camp.persisted? ? "Save changes" : "Create camp"),
+          class: "rounded bg-neutral-50 px-4 py-2 text-neutral-950 font-medium hover:bg-neutral-200 cursor-pointer" %>
+    <%= link_to "Cancel", (camp.persisted? ? organizer_camp_path(camp) : organizer_camps_path),
+          class: "text-sm text-neutral-400 hover:text-neutral-200" %>
+  </div>
+<% end %>

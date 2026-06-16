@@ -1,0 +1,64 @@
+<% content_for :title, @camp.name %>
+
+<section class="w-full max-w-4xl mx-auto">
+  <p class="text-sm">
+    <%= link_to "← Your camps", organizer_camps_path, class: "text-neutral-400 hover:text-neutral-200" %>
+  </p>
+
+  <% if flash[:notice] %>
+    <p class="mt-4 text-sm text-emerald-400"><%= flash[:notice] %></p>
+  <% end %>
+
+  <header class="mt-6 mb-8 flex items-baseline justify-between">
+    <div>
+      <h1 class="text-3xl font-semibold tracking-tight"><%= @camp.name %></h1>
+      <p class="text-neutral-400 mt-1">
+        <%= @camp.start_date.strftime("%b %-d") %> – <%= @camp.end_date.strftime("%b %-d, %Y") %>
+        <% if @camp.target_artist.present? %>&middot; for <%= @camp.target_artist %><% end %>
+      </p>
+    </div>
+    <div class="flex items-center gap-2">
+      <%= link_to "Roster", organizer_camp_roster_path(@camp),
+            class: "rounded border border-neutral-700 px-3 py-1.5 text-sm text-neutral-200 hover:bg-neutral-800" %>
+      <%= link_to "Edit", edit_organizer_camp_path(@camp),
+            class: "rounded border border-neutral-700 px-3 py-1.5 text-sm text-neutral-200 hover:bg-neutral-800" %>
+      <%= button_to "Delete", organizer_camp_path(@camp), method: :delete,
+            form: { data: { turbo_confirm: "Delete this camp and all its sessions?" } },
+            class: "rounded border border-red-500/40 px-3 py-1.5 text-sm text-red-300 hover:bg-red-500/10 cursor-pointer" %>
+    </div>
+  </header>
+
+  <% if @camp.brief.present? %>
+    <div class="rounded border border-neutral-800 bg-neutral-900/50 p-4 mb-8 whitespace-pre-wrap text-neutral-200 font-mono text-sm">
+      <%= @camp.brief %>
+    </div>
+  <% end %>
+
+  <div class="flex items-baseline justify-between mb-4">
+    <h2 class="text-xl font-semibold">Sessions</h2>
+    <%= link_to "Add session", new_organizer_camp_session_path(@camp),
+          class: "rounded bg-neutral-50 px-3 py-1.5 text-sm text-neutral-950 font-medium hover:bg-neutral-200" %>
+  </div>
+
+  <% if @sessions.empty? %>
+    <p class="rounded border border-neutral-800 bg-neutral-900/50 p-6 text-neutral-400">
+      No sessions scheduled yet.
+    </p>
+  <% else %>
+    <ul class="divide-y divide-neutral-800 border border-neutral-800 rounded">
+      <% @sessions.each do |sess| %>
+        <li class="p-4 flex items-baseline justify-between">
+          <div>
+            <%= link_to sess.display_title, organizer_camp_session_path(@camp, sess),
+                  class: "text-neutral-50 hover:underline" %>
+            <p class="text-sm text-neutral-400 mt-1">
+              <%= l(sess.starts_at, format: :short) %> → <%= l(sess.ends_at, format: :short) %>
+              <% if sess.room.present? %>&middot; <%= sess.room %><% end %>
+            </p>
+          </div>
+          <span class="text-xs text-neutral-500"><%= pluralize(sess.session_assignments.size, "writer") %></span>
+        </li>
+      <% end %>
+    </ul>
+  <% end %>
+</section>
