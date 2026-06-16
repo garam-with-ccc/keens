@@ -117,6 +117,36 @@ Follow suno-enqueue's payload schema **exactly**. This skill teaches how to *fil
 
 ---
 
+## Audio-conditioned generation (when you have a reference clip)
+
+When the brief comes with a **reference audio clip** — e.g. a 4-bar loop produced by [`beat-suno-compose`](../beat-suno-compose/SKILL.md) and carried in the payload's `audio_input_path` — Suno conditions the new song on that audio. The clip already supplies tempo, groove, and timbre, so your `styles`/`prompt`/parameters play a **different role** than in text-only generation: they steer how far the result moves *away from* the reference.
+
+### Pick the mode (`audio_mode`)
+
+`audio_mode` is **suno-enqueue's** field (`"cover"` / `"remix"` / `"extend"`, optional, best-effort), but the *creative intent* is yours to decide here so the rest of the payload matches it:
+
+| `audio_mode` | Intent | What to do with `styles` / params |
+|---|---|---|
+| **`cover`** | Same song, re-performed in a new style/voice. | `styles` describes the **target** style to re-skin into. Keep `style_influence` high so the new style actually lands. |
+| **`remix`** | Keep the core groove/hook, restyle the production. | `styles` names the new production lane; lean on the clip for rhythm. Moderate `style_influence`. |
+| **`extend`** | Continue/grow the reference into a fuller track. | `styles` stays *close* to the reference's own genre so the continuation is seamless. |
+
+Omit `audio_mode` to let Suno choose its default — but state the intended mode in your handoff so `beat-suno-compose`/the operator can set it.
+
+### Tune the parameters around the reference
+
+* **`style_influence` (0–100)** — now reads as *"how hard to push toward `styles` and away from the reference."* For a faithful `cover`/`extend`, keep it **high (≈70–85)** so the named style wins. For a light touch that preserves the original feel, go **lower (≈40–55)**.
+* **`weirdness` (0–100)** — keep it **modest (≈20–40)** for audio-conditioned jobs unless the brief wants a wild reinterpretation; the reference clip is already constraining the result, and high weirdness fights it.
+* **`styles`** — describe the **destination**, not the reference (the audio carries the source). Don't re-describe the clip's own genre unless you specifically want to reinforce it (`extend`). BPM/Key in `styles` (rule 5) is usually **redundant** — the clip sets tempo — so omit it unless deliberately overriding.
+* **`exclude_styles`** — still useful to block drift into adjacent-wrong genres.
+* **`prompt`** — describe the *arrangement/energy you want layered on top of* the reference, not the reference itself.
+
+### Originality guardrail (still applies, and harder)
+
+The reference clip must be a source you're entitled to condition on — for `beat-suno-compose` that means the **persona's own prior track only**, never a third party's master. Don't reference real artists/producer tags in `styles`/`lyrics` either (Suno moderation rejects them, and it defeats the originality intent).
+
+---
+
 ## Worked examples: brief → finished payload
 
 ### Example 1 — Bright youth vocaloid rock (LAST_NOTE house style)
@@ -191,5 +221,6 @@ Follow suno-enqueue's payload schema **exactly**. This skill teaches how to *fil
 - [ ] `song_title` set; `vocal_gender` / `lyrics_mode` / `lyrics` match the brief
 - [ ] `weirdness` / `style_influence` tuned to brief (not blindly 50)
 - [ ] **Originality guardrail:** no protected lyrics, no real-artist/producer-tag references, no clone of a specific recording
+- [ ] **If audio-conditioned** (`audio_input_path` set): `audio_mode` intent chosen; `styles` describes the *destination* (not the clip); `style_influence`/`weirdness` tuned to the mode; BPM/Key dropped from `styles` unless overriding; reference source is one you're entitled to condition on (persona-own only)
 
 Then execute with **[`suno-enqueue`](../suno-enqueue/SKILL.md)**.
