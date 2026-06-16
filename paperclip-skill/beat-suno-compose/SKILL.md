@@ -1,13 +1,13 @@
 ---
 name: beat-suno-compose
-description: Use this skill to build an audio-conditioned Suno song from a persona's OWN prior track — search the persona's self-composed YouTube uploads, download the audio, separate stems, infer BPM, cut a clean 4-bar loop, and feed that clip to suno-enqueue via audio_input_path. The persona-only source scope is the originality guardrail. Pairs with write-suno-prompt (the prompt half) and suno-enqueue (the execution half).
+description: Use this skill to build an audio-conditioned Suno song from a persona's OWN prior track — search the persona's self-composed YouTube uploads, download the audio, separate stems, infer BPM from the drum stem, cut a clean 4-bar loop starting at the first pitch, and feed that clip to suno-enqueue via audio_input_path. The persona-only source scope is the originality guardrail. Pairs with write-suno-prompt (the prompt half) and suno-enqueue (the execution half).
 ---
 
 # beat-suno-compose — persona track → 4-bar reference clip → audio-conditioned Suno song
 
 This skill produces a short **reference audio clip** cut from a persona's *own* prior song and hands it to Suno for **audio-conditioned generation**. It is the front half of a three-skill chain:
 
-1. **`beat-suno-compose` (this skill)** — find/download a persona track, separate stems, infer BPM, cut a 4-bar loop. Output = a local clip path + a partially-filled payload.
+1. **`beat-suno-compose` (this skill)** — find/download a persona track, separate stems, infer BPM from the drum stem, cut a 4-bar loop starting at the first pitch. Output = a local clip path + a partially-filled payload.
 2. **[`write-suno-prompt`](../write-suno-prompt/SKILL.md)** — author the `styles`/`prompt`/parameters, and the audio-conditioned tuning (`audio_mode`, `style_influence`, `weirdness`).
 3. **[`suno-enqueue`](../suno-enqueue/SKILL.md)** — push the JSON (now carrying `audio_input_path`), poll, report the GDrive link.
 
@@ -34,8 +34,8 @@ All run **locally on the daemon host** (the same host suno-enqueue's daemon runs
 | **`yt-dlp`** | Download audio from the persona's YouTube upload | `pipx install yt-dlp` (or `brew install yt-dlp`) |
 | **`ffmpeg`** | Audio decode/encode + the final 4-bar cut | `brew install ffmpeg` |
 | **`demucs`** | Stem separation (board-confirmed engine) | `pipx install demucs` (PyTorch-backed) |
-| **`librosa`** *(primary)* | BPM + onset detection from the drum stem | `pip install librosa soundfile` |
-| **`aubio`** *(fallback)* | BPM + onset, lighter dependency | `pip install aubio` |
+| **`librosa`** *(primary)* | BPM from the drum stem **+** first-pitch detection (`pyin`) on the full mix | `pip install librosa soundfile` |
+| **`aubio`** *(BPM fallback only)* | BPM, lighter dependency. **Note:** aubio has no first-pitch step — if you fall back to it for tempo, still use librosa `pyin` for the cut start. | `pip install aubio` |
 
 Check availability before running; if a tool is missing, install it (per above) or stop and report — do **not** improvise a different pipeline.
 
@@ -72,43 +72,79 @@ yt-dlp -x --audio-format wav --audio-quality 0 \
 demucs --two-stems=drums -o "$WORK/demucs" "$WORK/source.wav"
 # htdemucs default → $WORK/demucs/htdemucs/source/{drums,no_drums}.wav
 DRUMS="$WORK/demucs/htdemucs/source/drums.wav"
+SOURCE="$WORK/source.wav"   # full mix — used for first-pitch detection
 ```
 
-The **drums/percussion stem** is what BPM/onset detection runs on — isolating it makes tempo tracking far more reliable than the full mix. (Full 4-stem `demucs -o ...` also works; you just need the drum stem.)
+The **drums/percussion stem** is what **BPM** detection runs on — isolating it makes tempo tracking far more reliable than the full mix. The **cut start point is the first *pitch*** and is computed from the **full mix** (`source.wav`), *not* from the drum stem — see step 4. (Full 4-stem `demucs -o ...` also works; you just need the drum stem for tempo. If you want a cleaner pitch signal you may point the pitch detector at the harmonic stem `no_drums.wav` instead of the full mix.)
 
-### 4. Infer BPM from the drum stem
+### 4. Infer BPM (drum stem) and the first PITCH (full mix)
 
-`librosa` first; `aubio` as a fallback.
+Two **separate** computations:
+
+* **BPM / tempo** — from the **drum/percussion stem** (`$DRUMS`), where the beat is cleanest.
+* **First pitch** — the time of the first sustained *pitched* (voiced) frame in the **full mix** (`$SOURCE`) via `librosa.pyin`. This is the cut start point.
+
+> **Do NOT use the drum-stem onset as the cut start.** A drum onset lands on the first *percussion transient* (the beat drop), which chops off any melodic intro that precedes it. The cut must begin on the first **pitch**, so an intro melody is preserved and the clip starts on a note, not a kick.
+
+`librosa` is primary; `aubio` may substitute **for BPM only** (it has no pitch step).
 
 ```python
-# bpm.py — prints "<bpm> <first_onset_sec>"
-import sys, librosa
-y, sr = librosa.load(sys.argv[1], sr=None, mono=True)
-tempo = float(librosa.beat.tempo(y=y, sr=sr)[0])          # global BPM estimate
-onsets = librosa.onset.onset_detect(y=y, sr=sr, units="time")
-first = float(onsets[0]) if len(onsets) else 0.0
-print(f"{tempo:.2f} {first:.4f}")
+# bpm.py — usage: python3 bpm.py <drum_stem.wav> [<fullmix_or_harmonic.wav>]
+# prints "<bpm> <first_pitch_sec>"
+#   - BPM (tempo)     : inferred from the DRUM/percussion stem (arg 1)
+#   - first_pitch_sec : time of the FIRST sustained PITCH in the full mix /
+#                       harmonic stem (arg 2; defaults to arg 1 if omitted)
+# The cut start point is first_pitch_sec — NOT the drum onset.
+import sys, librosa, numpy as np
+
+drums_path = sys.argv[1]
+pitch_path = sys.argv[2] if len(sys.argv) > 2 else sys.argv[1]
+
+# --- tempo from the drum/percussion stem (drums track tempo best) ---
+yd, srd = librosa.load(drums_path, sr=None, mono=True)
+tempo = float(np.atleast_1d(librosa.feature.tempo(y=yd, sr=srd))[0])
+
+# --- first PITCH from the full mix / harmonic content (the cut start) ---
+yp, srp = librosa.load(pitch_path, sr=None, mono=True)
+f0, _, voiced_prob = librosa.pyin(
+    yp, sr=srp,
+    fmin=librosa.note_to_hz('C2'), fmax=librosa.note_to_hz('C7'))
+times = librosa.times_like(f0, sr=srp)
+
+# require a short sustained voiced run so a single noisy frame can't trip it
+MIN_VOICED_FRAMES = 3
+voiced = (np.nan_to_num(voiced_prob) > 0.5) & ~np.isnan(f0)
+first_pitch = 0.0
+run = 0
+for i, v in enumerate(voiced):
+    run = run + 1 if v else 0
+    if run >= MIN_VOICED_FRAMES:
+        first_pitch = float(times[i - MIN_VOICED_FRAMES + 1])
+        break
+
+print(f"{tempo:.2f} {first_pitch:.4f}")
 ```
 
 ```sh
-read BPM ONSET < <(python3 bpm.py "$DRUMS")
-# aubio fallback: aubio tempo "$DRUMS"   /   aubio onset "$DRUMS"
+read BPM PITCH < <(python3 bpm.py "$DRUMS" "$SOURCE")
+# aubio fallback for TEMPO ONLY: aubio tempo "$DRUMS"
+#   (still take PITCH from librosa pyin — aubio has no first-pitch step)
 ```
 
-### 5. Cut a 4-bar loop from the first onset (`ffmpeg`)
+### 5. Cut a 4-bar loop from the first PITCH (`ffmpeg`)
 
-Assume 4/4. **4 bars = 16 beats.** Seconds = `16 * 60 / BPM`. Start at the first detected onset so the clip lands on the downbeat instead of mid-silence.
+Assume 4/4. **4 bars = 16 beats.** Seconds = `16 * 60 / BPM`. Start at the **first pitch** (`$PITCH` from step 4) so the clip begins on the first musical note — intro melody included — instead of on the drum drop or mid-silence.
 
 ```sh
 DUR=$(python3 -c "print(16*60/float('$BPM'))")
-ffmpeg -y -ss "$ONSET" -t "$DUR" -i "$WORK/source.wav" \
+ffmpeg -y -ss "$PITCH" -t "$DUR" -i "$WORK/source.wav" \
   -c:a pcm_s16le "$WORK/cut.wav"
-# → $WORK/cut.wav  (the reference clip)
+# → $WORK/cut.wav  (the reference clip, starting on the first pitch)
 ```
 
-Cut from the **full mix** (`source.wav`), not the isolated drum stem — Suno conditions better on a musical excerpt than on drums alone. The drum stem is only for tempo/onset analysis.
+Cut from the **full mix** (`source.wav`), not the isolated drum stem — Suno conditions better on a musical excerpt than on drums alone. The drum stem is only for tempo analysis; the **start time comes from first-pitch detection on the full mix**.
 
-> **Deferred — verse/chorus detection (follow-up, NOT in this version).** This v1 does a single naive cut: first onset → 4 bars. It does **not** locate a chorus/hook or pick the "best" section. Smarter section detection (e.g. structural segmentation to grab the chorus) is a **follow-up** item, intentionally out of scope per the board. Document this limitation wherever you report the clip.
+> **Deferred — verse/chorus detection (follow-up, NOT in this version).** This v1 does a single naive cut: first pitch → 4 bars. It does **not** locate a chorus/hook or pick the "best" section. Smarter section detection (e.g. structural segmentation to grab the chorus) is a **follow-up** item, intentionally out of scope per the board. Document this limitation wherever you report the clip.
 
 ### 6. Enqueue as an audio-conditioned Suno song
 
@@ -143,7 +179,7 @@ EOF
 * **`$WORK/source.wav`** and **`$WORK/demucs/...`** — intermediate artifacts (keep for re-cuts; safe to delete after).
 * **The enqueued payload** — JSON carrying `audio_input_path` + `audio_mode`, handed to suno-enqueue.
 
-When you report on your Paperclip issue, note the **source video** (proving persona-ownership), the **inferred BPM**, and that the cut used the **naive first-onset/4-bar** method (verse/chorus detection deferred).
+When you report on your Paperclip issue, note the **source video** (proving persona-ownership), the **inferred BPM**, the **first-pitch start time** the cut began at, and that the cut used the **naive first-pitch/4-bar** method (verse/chorus detection deferred).
 
 ---
 
