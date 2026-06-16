@@ -2,6 +2,10 @@
 require "rubygems"
 require "bundler/setup"
 
-ARGV.unshift("--ensure-latest")
-
+# NOTE: --ensure-latest removed deliberately (KEE-689).
+# It makes Brakeman exit 5 ("not the latest version") whenever a newer
+# brakeman is published upstream, *before* running the scan — coupling CI
+# green to upstream's release cadence rather than to our own code. Keeping
+# our pinned version current is bundle-audit/Dependabot's job, not the
+# scanner's. Our scan currently reports 0 security warnings.
 load Gem.bin_path("brakeman", "brakeman")
