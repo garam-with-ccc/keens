@@ -23,6 +23,19 @@ This skill produces a short **reference audio clip** cut from a persona's *own* 
 * Conditioning on the persona's *own* earlier output keeps the new song inside the persona's own creative lineage — that is the whole point of "compose from your own beat."
 * If you cannot confirm a candidate video is the persona's own composition/upload, **do not use it.** Stop and ask, or fall back to text-only generation (skip `audio_input_path` entirely).
 
+### Emulation personas: "own catalogue" = the camp's own persona-lens output (self-seed)
+
+Most roster producers are **emulation personas** (e.g. Kanye, Pharrell) — they reference a real-world artist's *style* but have **no real-world catalogue of their own** to draw a clip from. A literal reading of "the persona's own catalogue" would lock every emulation persona out of the audio path entirely. That is **not** the intent.
+
+For an emulation persona, **"the persona's own catalogue" means the camp's own generated output in that persona's lens.** Concretely, the **self-seed** path:
+
+1. Generate a **persona-lens seed track text-only** (no `audio_input_path`) via the normal write-suno-prompt → suno-enqueue chain — this is the camp's own original output, produced through the persona's stylistic lens.
+2. Run **this skill's pipeline on that self-generated seed**: stem-sep → BPM → first-pitch 4-bar cut → self-condition the audio path on the cut.
+
+This is **skill-clean** (no third-party master ever touches the conditioning input) and still exercises the full pipeline. The seed audio you condition on must be the camp's own generation — **conditioning on a real commercial master remains forbidden**, regardless of which artist the persona emulates.
+
+> **Rule of thumb:** real-artist persona with a genuine self-uploaded catalogue → condition on that. Emulation persona with no real catalogue → self-seed (generate text-only in the persona's lens, then condition on a cut of *that*). Never a commercial master either way.
+
 ---
 
 ## Required runtime tools
@@ -55,6 +68,8 @@ Work in a scratch dir you own, e.g. `~/beat-suno/<persona>/<slug>/`. Do **not** 
 Search YouTube for an upload the **persona itself** composed/published. Confirm authorship (channel = the persona, or the brief explicitly names the source video). Capture the video URL.
 
 > Originality guardrail above governs this step. No persona-owned candidate → no `audio_input_path`.
+>
+> **Emulation persona (no real catalogue)?** Don't search YouTube — **self-seed** instead: generate a persona-lens seed track text-only first, then run steps 2–5 of this pipeline on that self-generated audio. See "Emulation personas" under the originality guardrail. (For self-seed, your `source.wav` in step 2 is the camp's own generated seed file, not a yt-dlp download.)
 
 ### 2. Download the audio with `yt-dlp`
 
@@ -185,7 +200,7 @@ When you report on your Paperclip issue, note the **source video** (proving pers
 
 ## Guardrails recap
 
-* **Persona-own source only** — the originality guardrail. No third-party masters as conditioning input.
+* **Persona-own source only** — the originality guardrail. No third-party masters as conditioning input. For emulation personas (no real catalogue), "persona-own" = the camp's own persona-lens generation (self-seed); commercial masters stay forbidden.
 * **No browser / no manual Suno upload** — suno-enqueue rules 1–8 hold; the daemon owns all Suno side effects.
 * **Validate the clip** against suno-enqueue's `audio_input_path` contract (existing regular file, accepted extension, within size cap) — a bad clip returns `VALIDATION_ERROR` at enqueue time.
 * **Scratch files stay outside `~/Develop/suno-process/`** (rule 4).
